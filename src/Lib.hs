@@ -226,6 +226,13 @@ merge (Bin as bs) = mergeLists as bs
 -- | Compose any f-algebra with f-coalgebra to get a map on the carriers
 hylo :: Functor f => (f b -> b) -> (a -> f a) -> a -> b
 hylo alg coalg = alg . fmap (hylo alg coalg) . coalg
+-- Alternatively:
+-- hylo alg coalg = cata alg . ana coalg
+--  = alg . fmap (cata alg) . unFix . Fix . fmap (ana coalg) . coalg
+--  = alg . fmap (cata alg) . fmap (ana coalg) . coalg
+--  = alg . fmap (cata alg . ana coalg) . coalg
+--  = alg . fmap (hylo alg coalg) . coalg
+-- We have fused away the intermediate Fix f data structure!
 
 -- | Merge sort
 mergeSort :: Ord a => [a] -> [a]
