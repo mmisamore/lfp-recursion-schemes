@@ -238,3 +238,50 @@ hylo alg coalg = alg . fmap (hylo alg coalg) . coalg
 mergeSort :: Ord a => [a] -> [a]
 mergeSort = hylo merge splitCoAlg
 
+
+-- Catamorphism Fusion Law:
+-- By definition, cata alg = alg . fmap (cata alg) . unFix
+-- Suppose f :: f a -> a, g :: f b -> b, h :: a -> b
+-- Suppose also that h . f = g . fmap h (i.e. h induces an algebra homomorphism)
+-- Then h . cata f = cata g
+--
+-- Equational proof assuming uniqueness of fixed points:
+-- Observe that cata g = g . fmap (cata g) . unFix, so g is a fixed point of the equation
+-- X = g . fmap X . unFix
+-- Then h . cata f = h . f . fmap (cata f) . unFix
+-- = g . fmap h . fmap (cata f) . unFix
+-- = g . fmap (h . cata f) . unFix
+-- so h . cata f is a fixed point of the same equation. By uniqueness of fixed points,
+-- h . cata f = cata g.
+--
+-- There is also a direct category-theoretic proof, but the equational proof is advantageous
+-- for clarifying the role of fixed points. If the cost of h (in time or memory)
+-- is proportional to the size of its input then this law sometimes leads to a performance
+-- gain.
+
+-- Catamorphism Compose Law:
+-- Suppose h :: g a -> f a, f :: f a -> a
+-- Then cata f . cata (Fix . h) = cata (f . h)
+--
+-- Equational proof assuming uniqueness of fixed points:
+-- By parametricity, h is a natural transformation so in particular
+-- fmap (cata f) . h = h . fmap (cata f)
+-- Observe that cata (f . h) is a solution to the equation X = f . h . fmap X . unFix.
+-- Now consider
+-- f . h . fmap (cata f . cata (Fix . h)) . unFix
+-- = f . h . fmap (f . fmap (cata f) . unFix . Fix . h . fmap (cata (Fix.h)) . unFix) . unFix
+-- = f . h . fmap (f . fmap (cata f) . h . fmap (cata (Fix.h)) . unFix) . unFix
+-- = f . h . fmap (f . h . fmap (cata f) . fmap (cata (Fix.h)) . unFix) . unFix
+-- = f . h . fmap (f . h . fmap (cata f . cata (Fix.h)) . unFix) . unFix
+-- So cata f . cata (Fix . h) is also a fixed point of the same equation. By uniqueness of
+-- fixed points, cata f . cata (Fix . h) = cata (f . h)
+--
+-- The categorical statement of this is roughly that catamorphisms respect natural transformations.
+-- The computational import is that we can fuse together two catamorphisms into a single traversal,
+-- eliminating the intermediate Fix f structure.
+-- Here's a famous special case: in the above, let a = Fix f, g = f. Then:
+-- h :: f (Fix f) -> f (Fix f)
+-- f :: f (Fix f) -> Fix f
+-- Let g = Fix . h so g :: f (Fix f) -> Fix f
+-- Therefore cata f . cata g = cata (f . h) = cata (f . unFix . g).
+
